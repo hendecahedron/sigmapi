@@ -1,49 +1,52 @@
-(ns sigmapi.core
+(ns ^{:doc "𝝨𝝥" :author "Matthew Chadwick"}
+  sigmapi.core
   "
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    Implementations of the sum-product and max-sum
+    algorithms, from Factor Graphs and the Sum-Product Algorithm
+    Frank R. Kschischang, Senior Member, IEEE, Brendan J. Frey, Member, IEEE, and
+    Hans-Andrea Loeliger, Member, IEEE
+    IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 47, NO. 2, FEBRUARY 2001
+    DOI: 10.1109/18.910572
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-  Lesser General Public License for more details.
+    Also, Pattern Recognition and Machine Learning,
+    Christopher M. Bishop, was invaluable
 
-  /*
-  * Copyright (C) 2016 Intermine
-  *
-  * This code may be freely distributed and modified under the
-  * terms of the GNU Lesser General Public Licence. This should
-  * be distributed with the code. See the LICENSE file for more
-  * information or http://www.gnu.org/copyleft/lesser.html.
-  *
-  */
 
-  Implementations of the sum-product and max-sum
-  algorithms, from Factor Graphs and the Sum-Product Algorithm
-  Frank R. Kschischang, Senior Member, IEEE, Brendan J. Frey, Member, IEEE, and
-  Hans-Andrea Loeliger, Member, IEEE
-  IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 47, NO. 2, FEBRUARY 2001
-  DOI: 10.1109/18.910572
 
-  Also, Pattern Recognition and Machine Learning,
-  Christopher M. Bishop, was invaluable.
 
-  TODO:
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  * rewrite this with transducers
-  * separate api from impl
-  * Neanderthal implementation
-  *
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+    Lesser General Public License for more details.
+
+    /*
+    * Copyright (C) 2016 Intermine
+    *
+    * This code may be freely distributed and modified under the
+    * terms of the GNU Lesser General Public Licence. This should
+    * be distributed with the code. See the LICENSE file for more
+    * information or http://www.gnu.org/copyleft/lesser.html.
+    *
+    */
+
+
+    TODO:
+
+    * rewrite this with transducers
+    * separate api from impl
+    * Neanderthal implementation
 
   "
   (:require
     [clojure.core.matrix :as m]
     [clojure.set :as set]
     [loom.graph :as lg]
-    [loom.attr :as lat]
     [clojure.walk :as walk])
     #?(:cljs (:require-macros
       [sigmapi.core :refer [fgtree]])))
@@ -90,31 +93,30 @@
 
 (comment
   "
-  Protocols
-  There are 2 types of node in a factor graph: Variable and Factor
-  There are several algorithms that can be run on a factor graph,
-  each of which causes different kinds of messages to be exchanged.
-  The only constant is the messaging itself, and that each node must
-  have product (x) and identity (i) functions. Product doesn't mean
-  multiplication necessarily, it just means the ability to combine
-  messages into one.
-  "
-  )
+    Protocols
+    There are 2 types of node in a factor graph: Variable and Factor
+    There are several algorithms that can be run on a factor graph,
+    each of which causes different kinds of messages to be exchanged.
+    The only constant is the messaging itself, and that each node must
+    have product (x) and identity (i) functions. Product doesn't mean
+    multiplication necessarily, it just means the ability to combine
+    messages into one.
+  ")
 
 (defprotocol Messaging
   "
 
-  Messaging
+    Messaging
 
-  >< return an inflowing (leaves-first) message for the given
-   node-id to from the the given messages
-  <> return an outflowing (root-first) message for the given
-   node-id to from the the given messages
+    >< return an inflowing (leaves-first) message for the given
+       node-id to from the the given messages
+    <> return an outflowing (root-first) message for the given
+       node-id to from the the given messages
 
-  i return the identity message for this node
+    i return the identity message for this node
 
 
-  messages always excludes the destination node
+    messages always excludes the destination node
 
 
   "
@@ -137,10 +139,9 @@
   (p [this x]))
 
 (defn indexed-best
-  "Returns list of the best (according to the given function f)
-  items in the given matrix, and their indices.
-
-  currently this is slow in core.matrix
+  "
+    Returns list of the best (according to the given function f)
+    items in the given matrix, and their indices.
   "
   [f]
   (fn ibf [mat]
@@ -153,8 +154,10 @@
 (def indexed-max (indexed-best m/emax))
 
 (defn rotate-vec
-  "Rotate the given vector v so that index
-  i is at the position given by fn f (first or last)"
+  "
+    Rotate the given vector v so that index
+    i is at the position given by fn f (first or last)
+  "
   [v i f]
   (if (= f last)
     (into (subvec v (inc i) (count v)) (subvec v 0 (inc i)))
@@ -162,11 +165,11 @@
 
 (defn tranz
   "
-  Return the given matrix mat transposed such that the dimension at index i
-  is the first or last (f) dimension.
-  e.g. if m is a matrix with shape [2 3 4 5], then (tranz m 2 last) has shape [5 2 3 4]
-        or (tranz m 2 first) has shape [4 5 2 3]
-  Don't like this, there must be a better way.
+    Return the given matrix mat transposed such that the dimension at index i
+    is the first or last (f) dimension.
+    e.g. if m is a matrix with shape [2 3 4 5], then (tranz m 2 last) has shape [5 2 3 4]
+          or (tranz m 2 first) has shape [4 5 2 3]
+    Don't like this, there must be a better way.
   "
   ([mat i f]
     (tranz mat (vec (range (m/dimensionality mat))) i f))
@@ -475,48 +478,48 @@ max-sum algorithm with the given id")
 (comment
   "
 
-  Frey2001Factor DOI: 10.1109/18.910572 page 502
+    Frey2001Factor DOI: 10.1109/18.910572 page 502
 
-  As in the single-i algorithm, message passing is initiated at
-  the leaves. Each vertex v remains idle until messages have arrived
-  on all but one of the edges incident on v. Just as in the
-  single-i algorithm, once these messages have arrived, v is able
-  to compute a message to be sent on the one remaining edge
-  to its neighbor (temporarily regarded as the parent), just as in
-  the single-i algorithm, i.e. according to Fig. 5. Let us denote
-  this temporary parent as vertex w. After sending a message to w
-  , vertex v returns to the idle state, waiting for a “return message”
-  to arrive from w. Once this message has arrived, the vertex
-  is able to compute and send messages to each of its neighbors
-  (other than w), each being regarded, in turn, as a parent.
+    As in the single-i algorithm, message passing is initiated at
+    the leaves. Each vertex v remains idle until messages have arrived
+    on all but one of the edges incident on v. Just as in the
+    single-i algorithm, once these messages have arrived, v is able
+    to compute a message to be sent on the one remaining edge
+    to its neighbor (temporarily regarded as the parent), just as in
+    the single-i algorithm, i.e. according to Fig. 5. Let us denote
+    this temporary parent as vertex w. After sending a message to w
+    , vertex v returns to the idle state, waiting for a “return message”
+    to arrive from w. Once this message has arrived, the vertex
+    is able to compute and send messages to each of its neighbors
+    (other than w), each being regarded, in turn, as a parent.
 
 
-  Bishop, Pattern Recognition and Machine Learning page 412
+    Bishop, Pattern Recognition and Machine Learning page 412
 
-  We can readily generalize this result to arbitrary tree-structured
-  factor graphs by substituting the expression (8.59) for the factor
-  graph expansion into (8.89) and again exchanging maximizations with products.
-  The structure of this calculation is identical to that of the
-  sum-product algorithm, and so we can simply translate those
-  results into the present context.
-  In particular, suppose that we designate a particular
-  variable node as the ‘root’ of the graph.
-  Then we start a set of messages propagating inwards from the leaves
-  of the tree towards the root, with each node sending its message
-  towards the root once it has received all incoming messages from its other neighbours.
-  The final maximization is performed over the product
-  of all messages arriving at the root node,
-  and gives the maximum value for p(x).
-  This could be called the max-product algorithm and is
-  identical to the sum-product algorithm except that summations
-  are replaced by maximizations. Note that at this stage,
-  messages have been sent from leaves to the root,
-  but not in the other direction.
+    We can readily generalize this result to arbitrary tree-structured
+    factor graphs by substituting the expression (8.59) for the factor
+    graph expansion into (8.89) and again exchanging maximizations with products.
+    The structure of this calculation is identical to that of the
+    sum-product algorithm, and so we can simply translate those
+    results into the present context.
+    In particular, suppose that we designate a particular
+    variable node as the ‘root’ of the graph.
+    Then we start a set of messages propagating inwards from the leaves
+    of the tree towards the root, with each node sending its message
+    towards the root once it has received all incoming messages from its other neighbours.
+    The final maximization is performed over the product
+    of all messages arriving at the root node,
+    and gives the maximum value for p(x).
+    This could be called the max-product algorithm and is
+    identical to the sum-product algorithm except that summations
+    are replaced by maximizations. Note that at this stage,
+    messages have been sent from leaves to the root,
+    but not in the other direction.
 
-  (somewhere in one paper it says that any node can be root,
-  actually one node will emerge as root somewhere naturally but
-  if it's a factor node it needs to pass and allow a variable
-  node to be the root)
+    (somewhere in one paper it says that any node can be root,
+    actually one node will emerge as root somewhere naturally but
+    if it's a factor node it needs to pass and allow a variable
+    node to be the root)
 
   "
   )
@@ -524,26 +527,26 @@ max-sum algorithm with the given id")
 (defn message-passing
   "
 
-  Synchronous message-passing on the given model given previous-model.
-  This is the simplest form of message-passing. Can add other
-  kinds (loopy, asynchronous core.async) later but this is easy to test
+    Synchronous message-passing on the given model given previous-model.
+    This is the simplest form of message-passing. Can add other
+    kinds (loopy, asynchronous core.async) later but this is easy to test
 
-  Returns the given model with its messages updated
+    Returns the given model with its messages updated
 
-  A model is a map with:
+    A model is a map with:
 
-  * a graph describing its structure
-  * a messages map of the form {:node-to-id {:node-from-id message}}
-  * a map of nodes (variable, factor)
+    * a graph describing its structure
+    * a messages map of the form {:node-to-id {:node-from-id message}}
+    * a map of nodes (variable, factor)
 
-  Messaging has two phases: in from the leaves >< and out
-  from the root <>. The root is the variable node that messages
-  from the leaves happen to converge on (if a factor node
-  happens to get the chance to become root it passes).
-  Each node combines its messages according to its local
-  product and sum functions and sends the result to the node
-  it's summarizing for
-  (or all but one of its neighbours if it's root - see comment above).
+    Messaging has two phases: in from the leaves >< and out
+    from the root <>. The root is the variable node that messages
+    from the leaves happen to converge on (if a factor node
+    happens to get the chance to become root it passes).
+    Each node combines its messages according to its local
+    product and sum functions and sends the result to the node
+    it's summarizing for
+    (or all but one of its neighbours if it's root - see comment above).
 
   "
   [previous-model {:keys [messages graph nodes] :as model}]
@@ -665,18 +668,6 @@ max-sum algorithm with the given id")
     (map
       (fn [[id sequence]] [id (= sequence (get config id))])
       sequence-by-id)))
-
-(defn with-attrs
-  "Adds attributes to the given graph
-  for the given nodes"
-  ([{g :graph nodes :nodes :as m}]
-    (assoc-in m [:graph :attrs]
-      (reduce
-       (fn [g [id n]]
-         (assoc-in g [id :type]
-          (if (satisfies? Variable n)
-            :sp/variable :sp/factor)))
-       {} nodes))))
 
 (defn print-msgs [{:keys [messages graph nodes] :as model}]
   (doseq [[to from msg] (mapcat (fn [[to msgs]] (map (partial cons to) msgs)) messages)]

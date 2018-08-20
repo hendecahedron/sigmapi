@@ -1,6 +1,10 @@
 # Sigma Pi
 
+An implementation of Factor Graphs and the Sum-Product Algorithm
+
 ## Usage
+
+
 
 FIXME
 
