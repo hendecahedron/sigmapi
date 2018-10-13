@@ -112,23 +112,3 @@
       exp->fg :sp/mxp
       propagate
       MAP-config)))
-
-(defn t1 []
-  (->>
-      (fgtree
-        (:x1
-          [:x1x2
-           [
-            [0.1 0.2 0.7]
-            [0.6 0.2 0.2]
-            ]
-           (:x2 [0.2 0.8])]
-          [:x1x3
-           [
-            [0.5 0.1 0.4]
-            [0.8 0.1 0.1]
-            ]
-           (:x3 [0.3 0.6 0.1])]))
-       (exp->fg :sp/mxp)
-       propagate
-       MAP-config))
