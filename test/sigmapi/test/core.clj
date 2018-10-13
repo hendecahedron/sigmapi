@@ -2,7 +2,7 @@
   (:require
     [clojure.test :refer [deftest testing is]]
     [sigmapi.core :as sp :refer [fgtree make-node  propagate print-msgs msg-diff
-        marginals exp->fg msgs-from-leaves message-passing ln- P
+        marginals exp->fg msgs-from-leaves <><> ln- P
         normalize random-matrix MAP-config combine can-message?
         update-factors]]
     [clojure.core.matrix :as m]

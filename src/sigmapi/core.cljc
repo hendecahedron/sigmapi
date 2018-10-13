@@ -94,13 +94,13 @@
 (comment
   "
     Protocols
+
     There are 2 types of node in a factor graph: Variable and Factor
+
     There are several algorithms that can be run on a factor graph,
-    each of which causes different kinds of messages to be exchanged.
-    The only constant is the messaging itself, and that each node must
-    have product (x) and identity (i) functions. Product doesn't mean
-    multiplication necessarily, it just means the ability to combine
-    messages into one.
+    each of which involves different kinds of messages being exchanged.
+
+    Each node must have product (x) and identity (i) functions
   ")
 
 (defprotocol Messaging
@@ -524,7 +524,7 @@ max-sum algorithm with the given id")
   "
   )
 
-(defn message-passing
+(defn <><>
   "
 
     Synchronous message-passing on the given model given previous-model.
@@ -591,7 +591,7 @@ max-sum algorithm with the given id")
   "Propagate messages on the given model's graph
   in both directions"
   ([m]
-    (propagate message-passing (assoc m :messages {})))
+    (propagate <><> (assoc m :messages {})))
   ([f m]
     (last
      (last

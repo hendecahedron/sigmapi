@@ -1,7 +1,9 @@
 {
- :paths ["src"]
- :deps
- {
-  org.clojure/clojure      {:mvn/version "1.9.0"}
- }
+  :paths ["src"]
+  :deps
+  {
+    org.clojure/clojure                    {:mvn/version "1.9.0"}
+    aysylu/loom                            {:mvn/version "1.0.1"}
+    net.mikera/core.matrix                 {:mvn/version "0.61.0"}
+  }
 }
