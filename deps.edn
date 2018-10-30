@@ -1,9 +1,13 @@
 {
-  :paths ["src" "test"]
-  :deps
-  {
-    org.clojure/clojure                    {:mvn/version "1.9.0"}
-    aysylu/loom                            {:mvn/version "1.0.1"}
-    net.mikera/core.matrix                 {:mvn/version "0.61.0"}
-  }
-}
+ :paths ["src" "test"]
+ :deps
+        {
+         org.clojure/clojure      {:mvn/version "1.9.0"}
+         aysylu/loom              {:mvn/version "1.0.1"}
+         net.mikera/core.matrix   {:mvn/version "0.61.0"}
+         uncomplicate/neanderthal {:mvn/version "0.20.4"
+                                   :exclusions  [org.jcuda/jcuda-natives
+                                                 org.jcuda/jcublas-natives]}
+         }
+
+ }
