@@ -342,8 +342,14 @@ max-sum algorithm with the given id")
   ([{:keys [graph id clm cpm dfn]}]
     (FactorNode. (or clm (m/emap ln- cpm)) id dfn)))
 
+; TODO this assertion is wrong - needs to be the product of the dimensionalities of the neighbours matrices
+
+(comment
+  )
+
 (defmethod make-node [:sp/mxp :sp/factor]
-  ([{:keys [graph id clm cpm dfn]}]
+  ([{:keys [graph id clm cpm dfn mfn]}]
+    ;(assert (== (m/shape (or clm cpm)) (mapv (m/dimensionality mfn) (map first (sort-by last dfn)))) "")
     (MaxFactorNode. (or clm (m/emap ln- cpm)) id dfn)))
 
 (defmethod make-node [:sp/sp :sp/variable]
@@ -372,21 +378,22 @@ max-sum algorithm with the given id")
             nodes (into {} (map (juxt :id identity) (mapcat identity edges)))
             neighbours (neighbourz edges)
             ]
-      {
-       :alg alg
-       :messages {}
-       :graph    g
-       :neighbours neighbours
-       :nodes
-                 (into {}
-                   (map
-                     (fn [id]
-                       [id (if-let [mat (get-in nodes [id :matrix])]
-                            (make-node {:alg alg :type :sp/factor :graph g :id id
-                                        :cpm (m/matrix mat)
-                                        :dfn (zipmap (neighbours id) (range))})
-                            (make-node {:alg alg :type :sp/variable :id id}))])
-                     (lg/nodes g) )) })))
+        {
+         :alg        alg
+         :messages   {}
+         :graph      g
+         :neighbours neighbours
+         :nodes
+                     (into {}
+                       (map
+                         (fn [id]
+                           [id (if-let [mat (get-in nodes [id :matrix])]
+                                 (make-node {:alg alg :type :sp/factor :graph g :id id
+                                             :cpm (m/matrix mat)
+                                             :dfn (zipmap (neighbours id) (range))
+                                             :mfn (zipmap (neighbours id) (map #(get-in nodes [% :matrix]) (neighbours id)))})
+                                 (make-node {:alg alg :type :sp/variable :id id}))])
+                         (lg/nodes g)))})))
 
 (defn matrices-as-vectors [fg]
   (reduce

@@ -2,7 +2,7 @@
   (:require
     [clojure.test :refer [deftest testing is]]
     [sigmapi.core :as sp :refer [e> make-node propagate print-msgs msg-diff
-                                 marginals exp->fg msgs-from-leaves <><> ln- P ln
+                                 marginals exp->fg msgs-from-leaves <><> ln- P ln pow
                                  normalize random-matrix MAP-config combine can-message?
                                  update-factors]]
     [clojure.core.matrix :as m]
@@ -80,6 +80,7 @@
       propagate
       MAP-config)))
 
+
 ; ["dog" "park" "car" "walk"]
 (defn fit [px]
   (e>
@@ -94,7 +95,18 @@
      (:c0)
      (:c1)]))
 
-(defn el [x] (ln (if (== 0.0 x) e x)))
+(defn el1 [px py]
+  (e>
+    (:xy
+      [:xy'|x.y
+       [[[[0.9 0.1] [0.1 0.1]] [[0.9 0.1] [0.1 0.1]]]
+        [[[0.9 0.1] [0.1 0.1]] [[0.9 0.1] [0.1 0.1]]]]
+       (:x [:px px])
+       (:y [:py py])]
+       )))
+
+(defn el [x]
+  (ln (if (== 0.0 x) Double/MIN_VALUE x)))
 
 (defn fi [g]
   (reduce m/add
