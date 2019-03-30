@@ -1,7 +1,7 @@
 (ns sigmapi.test.core
   (:require
     [clojure.test :refer [deftest testing is]]
-    [sigmapi.core :as sp :refer [e> make-node propagate print-msgs msg-diff
+    [sigmapi.core :as sp :refer [e> make-node propagate print-msgs msg-diff reprs
                                  marginals exp->fg msgs-from-leaves <><> ln- P ln pow
                                  normalize random-matrix MAP-config combine can-message?
                                  update-factors]]
@@ -60,26 +60,17 @@
   every value equal to the sum of its dimensions"
     (is (m/equals (test-cbt) (m/fill (m/new-array [2 3 4 5]) (reduce + [2 3 4 5]))))))
 
-(deftest test-max-configuration
-  (testing "That a simple graph (a branch, x2->x1<-x3) returns max config"
-    (->>
-      '(:x1
-         [:x1x2
-          [
-           [0.1 0.2 0.7]
-           [0.6 0.2 0.2]
-           ]
-          (:x2 [:px1 [0.2 0.8]])]
-         [:x1x3
-          [
-           [0.5 0.1 0.4]
-           [0.8 0.1 0.1]
-           ]
-          (:x3 [:px3 [0.3 0.6 0.1]])])
-      (exp->fg :sp/mxp)
-      propagate
-      MAP-config)))
+(defn test-max-configuration []
+  (->> (figure7)
+    (exp->fg :sp/mxp)
+    propagate
+    MAP-config))
 
+(defn test-marginals []
+  (->> (figure7)
+    (exp->fg :sp/sp)
+    propagate
+    reprs))
 
 ; ["dog" "park" "car" "walk"]
 (defn fit [px]
@@ -95,16 +86,6 @@
      (:c0)
      (:c1)]))
 
-(defn el1 [px py]
-  (e>
-    (:xy
-      [:xy'|x.y
-       [[[[0.9 0.1] [0.1 0.1]] [[0.9 0.1] [0.1 0.1]]]
-        [[[0.9 0.1] [0.1 0.1]] [[0.9 0.1] [0.1 0.1]]]]
-       (:x [:px px])
-       (:y [:py py])]
-       )))
-
 (defn el [x]
   (ln (if (== 0.0 x) Double/MIN_VALUE x)))
 
@@ -113,3 +94,4 @@
     (map (fn [[a b]]
       (m/mul (m/emap (fn [x] (pow x 2.0)) (m/sub (m/emap el a) (m/emap el b))) b))
       (partition 2 1 g))))
+

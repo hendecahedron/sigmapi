@@ -52,7 +52,7 @@
                [sigmapi.core :refer [e>]])))
 
 #?(:clj
-  (defmacro e> [xp]
+  (defmacro fgtree [xp]
    (walk/postwalk
      (fn [x]
        (if (and (seqable? x) (keyword? (first x)))
@@ -533,7 +533,7 @@ max-sum algorithm with the given id")
   "
   )
 
-(defn <><>
+(defn message-passing
   "
 
     Synchronous message-passing on the given model given previous-model.
@@ -626,6 +626,15 @@ max-sum algorithm with the given id")
      (map
        (fn [[id node]]
          [id (vec (m/emap f (maybe-list (:value (<> node (vals (get messages id)) nil nil nil)))))])
+       (filter (comp (fn [n] (satisfies? Variable n)) val) nodes)))))
+
+(defn reprs
+  ""
+  ([{:keys [messages graph nodes] :as model}]
+    (into {}
+     (map
+       (fn [[id node]]
+         [id (:repr (<> node (vals (get messages id)) nil nil nil))])
        (filter (comp (fn [n] (satisfies? Variable n)) val) nodes)))))
 
 (defn all-marginals
