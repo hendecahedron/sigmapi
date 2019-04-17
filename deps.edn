@@ -10,5 +10,4 @@
                                                  org.jcuda/jcublas-natives]}
          }
   :jvm ["-dDYLD_LIBRARY_PATH=/opt/intel/compilers_and_libraries/mac/"]
-
  }
