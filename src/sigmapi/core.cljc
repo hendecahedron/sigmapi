@@ -49,7 +49,7 @@
     [loom.graph :as lg]
     [clojure.walk :as walk])
     #?(:cljs (:require-macros
-               [sigmapi.core :refer [e>]])))
+               [sigmapi.core :refer [fgtree]])))
 
 #?(:clj
   (defmacro fgtree [xp]
@@ -231,7 +231,7 @@
     {:value f :repr id :dim-for-node dim-for-node})
   Factor
   Passes
-  (pass? [this] false)
+  (pass? [this] true)
   LogSpace
   (p [this x] (m/emap P x)))
 
@@ -342,14 +342,8 @@ max-sum algorithm with the given id")
   ([{:keys [graph id clm cpm dfn]}]
     (FactorNode. (or clm (m/emap ln- cpm)) id dfn)))
 
-; TODO this assertion is wrong - needs to be the product of the dimensionalities of the neighbours matrices
-
-(comment
-  )
-
 (defmethod make-node [:sp/mxp :sp/factor]
   ([{:keys [graph id clm cpm dfn mfn]}]
-    ;(assert (== (m/shape (or clm cpm)) (mapv (m/dimensionality mfn) (map first (sort-by last dfn)))) "")
     (MaxFactorNode. (or clm (m/emap ln- cpm)) id dfn)))
 
 (defmethod make-node [:sp/sp :sp/variable]
@@ -600,7 +594,7 @@ max-sum algorithm with the given id")
   "Propagate messages on the given model's graph
   in both directions"
   ([m]
-    (propagate <><> (assoc m :messages {})))
+    (propagate message-passing (assoc m :messages {})))
   ([f m]
     (last
      (last
@@ -712,36 +706,3 @@ max-sum algorithm with the given id")
                 (let [diff (set/difference (into #{} (vals msgs)) (into #{} (vals (get-in om [:messages to]))))]
                   (zipmap (map :id diff) diff))))
     nm (:messages nm)))
-
-(defn learn-variables [graph post priors-keys data]
-  (reductions
-    (fn [[g post] data-priors]
-      (let [
-              p2 (select-keys post (keys priors-keys))
-              p1 (merge (zipmap (vals priors-keys) (map p2 (keys priors-keys))) data-priors)
-              g  (update-factors g p1)
-            ]
-        [g (normalize-vals (marginals (propagate g)))]))
-    [graph (or post (zipmap (keys priors-keys) (map (comp (partial map P) :value i (:nodes graph)) (vals priors-keys))))] data))
-
-(defn learned-variables [{:keys [fg learned marginals priors-keys data] :as model}]
-  (let [[g m]
-          (last
-           (learn-variables
-             (or learned (exp->fg :sp/sp fg)) marginals priors-keys data))]
-    (-> model
-      (assoc :marginals m)
-      (assoc :learned g))))
-
-(defn learn-step
-  [{:keys [fg learned log-marginals priors-keys data] :as model}]
-      (let [
-              graph (or learned (exp->fg :sp/sp fg))
-              post  (or log-marginals (zipmap (keys priors-keys) (map (comp :value i (:nodes graph)) (vals priors-keys))))
-              p2    (select-keys post (keys priors-keys))
-              p1    (merge (zipmap (vals priors-keys) (map p2 (keys priors-keys))) data)
-              g     (update-factors graph p1 :clm)
-            ]
-        (-> model
-          (assoc :learned g)
-          (assoc :log-marginals (marginals (propagate g) identity)))))

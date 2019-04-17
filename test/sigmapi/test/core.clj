@@ -1,8 +1,8 @@
 (ns sigmapi.test.core
   (:require
     [clojure.test :refer [deftest testing is]]
-    [sigmapi.core :as sp :refer [e> make-node propagate print-msgs msg-diff reprs
-                                 marginals exp->fg msgs-from-leaves <><> ln- P ln pow
+    [sigmapi.core :as sp :refer [fgtree make-node propagate print-msgs msg-diff reprs
+                                 marginals exp->fg msgs-from-leaves message-passing ln- P ln pow
                                  normalize random-matrix MAP-config combine can-message?
                                  update-factors]]
     [clojure.core.matrix :as m]
@@ -71,27 +71,4 @@
     (exp->fg :sp/sp)
     propagate
     reprs))
-
-; ["dog" "park" "car" "walk"]
-(defn fit [px]
-  (e>
-    [:x|c0c1
-     [
-      [[0 0 0 0] [0 0 0 0.7] [0 0 0 0] [0 1 0 0]]
-      [[0 0 0 0.7] [0 0 0 0] [0 0 0.3 0] [0 0 0 0.7]]
-      [[0.1 0.3 0 0] [0 0 0 0.7] [0 0.1 0 0] [0 0.7 0 0]]
-      [[0.9 0.1 0 0] [0.3 0 0 0] [0.1 0.5 0 0] [0 0 0 0]]
-     ]
-     (:x [:px px])
-     (:c0)
-     (:c1)]))
-
-(defn el [x]
-  (ln (if (== 0.0 x) Double/MIN_VALUE x)))
-
-(defn fi [g]
-  (reduce m/add
-    (map (fn [[a b]]
-      (m/mul (m/emap (fn [x] (pow x 2.0)) (m/sub (m/emap el a) (m/emap el b))) b))
-      (partition 2 1 g))))
 
