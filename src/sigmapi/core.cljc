@@ -48,8 +48,7 @@
     [clojure.set :as set]
     [loom.graph :as lg]
     [clojure.walk :as walk])
-    #?(:cljs (:require-macros
-               [sigmapi.core :refer [e>]])))
+    #?(:cljs (:require-macros [sigmapi.core :refer [fgtree]])))
 
 #?(:clj
   (defmacro fgtree [xp]
@@ -231,7 +230,7 @@
     {:value f :repr id :dim-for-node dim-for-node})
   Factor
   Passes
-  (pass? [this] false)
+  (pass? [this] true)
   LogSpace
   (p [this x] (m/emap P x)))
 
@@ -343,10 +342,6 @@ max-sum algorithm with the given id")
     (FactorNode. (or clm (m/emap ln- cpm)) id dfn)))
 
 ; TODO this assertion is wrong - needs to be the product of the dimensionalities of the neighbours matrices
-
-(comment
-  )
-
 (defmethod make-node [:sp/mxp :sp/factor]
   ([{:keys [graph id clm cpm dfn mfn]}]
     ;(assert (== (m/shape (or clm cpm)) (mapv (m/dimensionality mfn) (map first (sort-by last dfn)))) "")
@@ -600,7 +595,7 @@ max-sum algorithm with the given id")
   "Propagate messages on the given model's graph
   in both directions"
   ([m]
-    (propagate <><> (assoc m :messages {})))
+    (propagate message-passing (assoc m :messages {})))
   ([f m]
     (last
      (last
