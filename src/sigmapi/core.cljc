@@ -49,15 +49,15 @@
     [loom.graph :as lg]
     [clojure.walk :as walk])
     #?(:cljs (:require-macros
-               [sigmapi.core :refer [fgtree]])))
+      [sigmapi.core :refer [fgtree]])))
 
 #?(:clj
   (defmacro fgtree [xp]
    (walk/postwalk
      (fn [x]
-       (if (and (seqable? x) (keyword? (first x)))
+       (if (and (seqable? x) (or (symbol? (first x)) (keyword? (first x))))
          `(~(if (vector? x) `vector `list) ~@x)
-         x))
+         (if (symbol? x) (keyword (name x)) x)))
      xp)))
 
 (defn log [x]
@@ -94,13 +94,13 @@
 (comment
   "
     Protocols
-
     There are 2 types of node in a factor graph: Variable and Factor
-
     There are several algorithms that can be run on a factor graph,
-    each of which involves different kinds of messages being exchanged.
-
-    Each node must have product (x) and identity (i) functions
+    each of which causes different kinds of messages to be exchanged.
+    The only constant is the messaging itself, and that each node must
+    have product (x) and identity (i) functions. Product doesn't mean
+    multiplication necessarily, it just means the ability to combine
+    messages into one.
   ")
 
 (defprotocol Messaging
@@ -113,7 +113,7 @@
     <> return an outflowing (root-first) message for the given
        node-id to from the the given messages
 
-    i  return the identity message for this node
+    i return the identity message for this node
 
 
     messages always excludes the destination node
@@ -343,7 +343,7 @@ max-sum algorithm with the given id")
     (FactorNode. (or clm (m/emap ln- cpm)) id dfn)))
 
 (defmethod make-node [:sp/mxp :sp/factor]
-  ([{:keys [graph id clm cpm dfn mfn]}]
+  ([{:keys [graph id clm cpm dfn]}]
     (MaxFactorNode. (or clm (m/emap ln- cpm)) id dfn)))
 
 (defmethod make-node [:sp/sp :sp/variable]
@@ -457,6 +457,12 @@ max-sum algorithm with the given id")
   (filter
     (partial leaf? g)
     (lg/nodes g)))
+
+(defn prior-nodes [{:keys [graph nodes] :as model}]
+  (into {} (map (fn [id] [id (nodes id)]) (filter
+                                    (fn [n]
+                                      (and (leaf? graph n) (satisfies? Factor (nodes n))))
+                                    (lg/nodes graph)))))
 
 (defn msgs-from-leaves [{:keys [messages graph nodes] :as model}]
   (reduce
@@ -613,23 +619,12 @@ max-sum algorithm with the given id")
 
 (defn marginals
   "Returns a map of marginals for the nodes of the given model"
-  ([model]
-    (marginals model P))
-  ([{:keys [messages graph nodes] :as model} f]
-    (into {}
-     (map
-       (fn [[id node]]
-         [id (vec (m/emap f (maybe-list (:value (<> node (vals (get messages id)) nil nil nil)))))])
-       (filter (comp (fn [n] (satisfies? Variable n)) val) nodes)))))
-
-(defn reprs
-  ""
-  ([{:keys [messages graph nodes] :as model}]
-    (into {}
-     (map
-       (fn [[id node]]
-         [id (:repr (<> node (vals (get messages id)) nil nil nil))])
-       (filter (comp (fn [n] (satisfies? Variable n)) val) nodes)))))
+  [{:keys [messages graph nodes] :as model}]
+  (into {}
+    (map
+      (fn [[id node]]
+        [id (vec (m/emap P (maybe-list (:value (<> node (vals (get messages id)) nil nil nil)))))])
+      (filter (comp (fn [n] (satisfies? Variable n)) val) nodes))))
 
 (defn all-marginals
   "Marginals for all given models"
@@ -706,3 +701,49 @@ max-sum algorithm with the given id")
                 (let [diff (set/difference (into #{} (vals msgs)) (into #{} (vals (get-in om [:messages to]))))]
                   (zipmap (map :id diff) diff))))
     nm (:messages nm)))
+
+(defn learn-variables [graph post priors data]
+  (reductions
+    (fn [[g post] data-priors]
+      (let [
+              p2 (select-keys post (keys priors))
+              p1 (merge (zipmap (vals priors) (map p2 (keys priors))) data-priors)
+              g  (update-factors g p1)
+            ]
+        [g (normalize-vals (marginals (propagate g)))]))
+    [graph (or post (zipmap (keys priors) (map (comp (partial mapv P) :value i (:nodes graph)) (vals priors))))] data))
+
+(defn learned-variables [{:keys [fg learned marginals priors data] :as model}]
+  (let [[g m]
+          (last
+           (learn-variables
+             (or learned (exp->fg :sp/sp fg)) marginals priors data))]
+    (-> model
+      (assoc :marginals m)
+      (assoc :learned g))))
+
+(defn learn-step-log
+  [{:keys [fg learned log-marginals priors data] :as model}]
+      (let [
+              graph (or learned (exp->fg :sp/sp fg))
+              post  (or log-marginals (zipmap (keys priors) (map (comp :value i (:nodes graph)) (vals priors))))
+              p2    (select-keys post (keys priors))
+              p1    (merge (zipmap (vals priors) (map p2 (keys priors))) data)
+              g     (update-factors graph p1 :clm)
+            ]
+        (-> model
+          (assoc :learned g)
+          (assoc :log-marginals (marginals (propagate g) identity)))))
+
+(defn learn-step
+  [{:keys [fg learned marginals priors data] :as model}]
+      (let [
+             {nodes :nodes :as graph} (or learned (exp->fg :sp/sp fg))
+              post (or marginals (zipmap (keys priors) (map (comp (partial map P) :value i nodes) (map (fn [v] (if (keyword? v) v (last v))) (vals priors)))))
+              p2 (select-keys post (keys priors))
+              p1 (merge (zipmap (map (fn [v] (if (keyword? v) v (first v))) (vals priors)) (map p2 (keys priors))) data)
+              g (update-factors graph p1)
+            ]
+        (-> model
+          (assoc :learned g)
+          (assoc :marginals (normalize-vals (sigmapi.core/marginals (propagate g)))))))
