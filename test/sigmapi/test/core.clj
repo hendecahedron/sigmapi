@@ -173,7 +173,7 @@
            [1/2 0 1/2]
            [1/2 1/2 0]
            ]
-          (door [p-door [0 0 1]])]
+          (door [p-door [1/3 1/3 1/3]])]
          [your-2nd-choice|host's-choice
           [
            [0 1/2 1/2]
