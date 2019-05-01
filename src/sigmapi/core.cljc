@@ -47,6 +47,7 @@
     [clojure.core.matrix :as m]
     [clojure.set :as set]
     [loom.graph :as lg]
+    [loom.alg :as la]
     [clojure.walk :as walk])
     #?(:cljs (:require-macros
       [sigmapi.core :refer [fgtree]])))
@@ -362,6 +363,15 @@ max-sum algorithm with the given id")
         (update b (fn [n] (conj (or n []) a)))))
     {} edges))
 
+(defn leaf?
+  ([g n]
+   (== 1 (lg/out-degree g n))))
+
+(defn leaves [g]
+  (filter
+    (partial leaf? g)
+    (lg/nodes g)))
+
 (defn edges->fg
   "
   TODO: need to check shape of graph and
@@ -369,6 +379,7 @@ max-sum algorithm with the given id")
   "
   ([alg edges]
       (let [g (apply lg/graph (map (partial map :id) edges))
+            t (lg/digraph (la/bf-span g (:id (ffirst edges))))
             nodes (into {} (map (juxt :id identity) (mapcat identity edges)))
             neighbours (neighbourz edges)
             ]
@@ -376,6 +387,8 @@ max-sum algorithm with the given id")
          :alg        alg
          :messages   {}
          :graph      g
+         :spanning-tree t
+         :leaves     (leaves t)
          :neighbours neighbours
          :nodes
                      (into {}
@@ -449,29 +462,20 @@ max-sum algorithm with the given id")
   [alg exp]
   (edges->fg alg (as-edges exp)))
 
-(defn leaf?
-  ([g n]
-   (== 1 (lg/out-degree g n))))
-
-(defn leaves [g]
-  (filter
-    (partial leaf? g)
-    (lg/nodes g)))
-
 (defn prior-nodes [{:keys [graph nodes] :as model}]
   (into {} (map (fn [id] [id (nodes id)]) (filter
                                     (fn [n]
                                       (and (leaf? graph n) (satisfies? Factor (nodes n))))
                                     (lg/nodes graph)))))
 
-(defn msgs-from-leaves [{:keys [messages graph nodes] :as model}]
+(defn msgs-from-leaves [{:keys [messages graph leaves nodes] :as model}]
   (reduce
     (fn [r id]
       (let [parent (first (lg/successors graph id))]
         (assoc-in r [:messages parent id]
           (assoc (i (get nodes id))
             :id id :flow :><))))
-    model (leaves graph)))
+    model leaves))
 
 (defn msgs-from-variables [{:keys [messages graph nodes] :as model}]
   (reduce
@@ -605,6 +609,18 @@ max-sum algorithm with the given id")
     (last
      (last
        (take-while (comp can-message? first)
+         (iterate (fn [[o n]] [n (f o n)])
+           [m (msgs-from-leaves m)]))))))
+
+(defn propagate-cycles
+  "Propagate messages on the given model's graph
+  in both directions"
+  ([m n]
+    (propagate-cycles message-passing n (assoc m :messages {})))
+  ([f n m]
+    (last
+     (last
+       (take n
          (iterate (fn [[o n]] [n (f o n)])
            [m (msgs-from-leaves m)]))))))
 
