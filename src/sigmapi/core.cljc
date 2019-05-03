@@ -58,7 +58,7 @@
      (fn [x]
        (if (and (seqable? x) (or (symbol? (first x)) (keyword? (first x))))
          `(~(if (vector? x) `vector `list) ~@x)
-         (if (symbol? x) (keyword (name x)) x)))
+         x))
      xp)))
 
 (defn log [x]
@@ -379,7 +379,7 @@ max-sum algorithm with the given id")
   "
   ([alg edges]
       (let [g (apply lg/graph (map (partial map :id) edges))
-            t (lg/digraph (la/bf-span g (:id (ffirst edges))))
+            t (lg/graph (la/bf-span g (:id (ffirst edges))))
             nodes (into {} (map (juxt :id identity) (mapcat identity edges)))
             neighbours (neighbourz edges)
             ]
