@@ -56,7 +56,7 @@
   (defmacro fgtree [xp]
    (walk/postwalk
      (fn [x]
-       (if (and (seqable? x) (or (symbol? (first x)) (keyword? (first x))))
+       (if (and (seqable? x) (keyword? (first x)))
          `(~(if (vector? x) `vector `list) ~@x)
          x))
      xp)))
