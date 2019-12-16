@@ -4,7 +4,7 @@
     [sigmapi.core :as sp :refer [fgtree make-node  propagate print-msgs msg-diff
         marginals exp->fg msgs-from-leaves message-passing ln- P
         normalize random-matrix MAP-config combine can-message?
-        update-factors]]
+        update-factors learn-variables]]
     [clojure.core.matrix :as m]
     [loom.graph :as lg]
     [loom.alg :as la]))
@@ -106,6 +106,20 @@
        (exp->fg :sp/mxp)
        propagate
        MAP-config))
+
+(defn tl []
+  (let [m {:fg (fgtree
+            (:x [:x|y (m/transpose [[0.1 0.1 0.8] [0.3 0.3 0.4] [0.8 0.1 0.1]])
+                            (:y [:py [1/3 1/3 1/3]])]
+                    [:px [1/3 1/3 1/3]]))
+           :priors {:x :px :y :py}}
+        data [
+              {:py [1.0 0.0 0.0]} {:py [1.0 0.0 0.0]} {:py [1.0 0.0 0.0]}
+
+             ]
+       ]
+     (learn-variables (exp->fg :sp/sp (:fg m)) nil (:priors m) data)))
+
 
 (defn MHP
   "
