@@ -727,7 +727,7 @@ max-sum algorithm with the given id")
               g  (update-factors g p1)
             ]
         [g (normalize-vals (marginals (propagate g)))]))
-    [graph (or post (zipmap (keys priors) (map (comp (partial mapv P) :value i (:nodes graph)) (vals priors))))] data))
+    [graph (or post (zipmap (keys priors) (map (comp (partial m/emap P) :value i (:nodes graph)) (vals priors))))] data))
 
 (defn learned-variables [{:keys [fg learned marginals priors data] :as model}]
   (let [[g m]
