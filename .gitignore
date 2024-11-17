@@ -1,0 +1,15 @@
+/target
+/classes
+/checkouts
+pom.xml
+pom.xml.asc
+*.log
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+.hgignore
+.hg/
+.idea/
+*.iml
+.DS_Store
