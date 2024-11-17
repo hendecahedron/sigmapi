@@ -1,15 +1,33 @@
-{
- :paths ["src"]
+{:paths ["src" "test"]
  :deps
- {
-   org.clojure/clojure      {:mvn/version "1.10.1"}
-   aysylu/loom              {:mvn/version "1.0.1"}
-   net.mikera/core.matrix   {:mvn/version "0.62.0"}
+ {org.clojure/clojure      {:mvn/version "1.12.0"}
+  aysylu/loom              {:mvn/version "1.0.2"}
  }
  :aliases
- {
-  :test
   {
-    :extra-paths ["test"]
-  }
- }}
+    :test {:extra-paths ["test"]}
+    :stats
+    {:extra-deps
+     {criterium/criterium {:mvn/version "0.4.6"}
+      com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.4.0"}
+      djblue/portal {:mvn/version "0.58.2"}
+      com.hypirion/clj-xchart {:mvn/version "0.2.0"}
+      cljplot/cljplot {:mvn/version "0.0.3"}
+      aerial.hanami/aerial.hanami {:mvn/version "0.19.0"}
+      kixi/stats {:mvn/version "0.5.5"}
+      }
+      :jvm-opts ["-Djdk.attach.allowAttachSelf"]
+     }
+     :dtype-next
+      {:extra-paths ["impls/dtype-next"]
+       :extra-deps {cnuernber/dtype-next {:mvn/version "10.000-beta-38"}
+                    org.clojure/math.combinatorics {:mvn/version "0.1.6"}}}
+     :core-matrix
+      {:extra-paths ["impls/core-matrix"]
+       :extra-deps {net.mikera/core.matrix {:mvn/version "0.63.0"}
+                    net.mikera/vectorz-clj {:mvn/version "0.48.0"}}}
+     :emmy
+      {:extra-paths ["impls/emmy"]
+       :extra-deps {org.mentat/emmy {:mvn/version "0.31.0"}}}
+   }
+ }
